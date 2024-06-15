@@ -1,0 +1,4 @@
+I can't SVG file open in react.js . Svg File Include CSS And Html file separate
+i downloaded SVG Files from Stroyset, this website svg files like below link Here is the SVG Link when you click Export button you get three option like this Image if i click download button i download svg format, this file can open in local browser i can't in react app why?
+
+when going like with image tag it showing error. who can i open this file in react.js

@@ -1,0 +1,14 @@
+How do I change the grid size with Matplotlib?
+This is what I want:
+
+properly spaced grid
+
+This is what I currently have:
+
+my grid
+
+This is my code so far:
+
+l = [-1, 1, -10, 10]
+plt.axis(l)
+plt.grid()

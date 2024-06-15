@@ -1,0 +1,45 @@
+I would like to know how to reindex Express program (.CDX) files using PHP
+Currently, I can insert data using the xbase library in PHP, but I'm facing an issue where I have to manually reindex the data in the Express program after inserting it. I would like to know how to write a PHP program that can trigger a reindexing process after inserting data. Here is the code I'm using for the insert
+
+$remote_path8 = 'GLJNLIT.DBF';
+  $temp_file = tempnam(sys_get_temp_dir(), 'dbf_temp');
+  $connection = ftp_connect($ftp_server);
+  ftp_login($connection, $ftp_user, $ftp_pass);
+  if (ftp_get($connection, $temp_file, $remote_path8, FTP_BINARY)){
+
+  $table1 = new TableEditor(
+    $temp_file,
+    [
+        'editMode' => TableEditor::EDIT_MODE_CLONE,
+    ]
+  );
+     $record1 = $table1->appendRecord();
+     $record->set('VOUCHER', '111111');
+     $record1->set('Seqit', '3');
+     $record1->set('Voudat', '20231107');
+     $record1->set('Accnum', '1154-00');
+     $record1->set('Depcod', '');
+     $record1->set('Jobcod', '');
+     $record1->set('Phase', '');
+     $record1->set('Coscod', '');
+     $record1->set('Descrp', 'JIB');
+     $record1->set('Trntyp', '0');
+     $record1->set('Amount', '1');
+     $record1->set('Chgdat', '20231107');
+     $record1->set('Chgtim', '0951');
+     $record1->set('Adjust', '');
+     $record1->set('Chgaccfrom', '');
+
+     $table1
+     ->writeRecord($record1)
+     ->save()
+     ->close();
+
+      ftp_put($connection, $remote_path8, $temp_file, FTP_BINARY); 
+      ftp_close($connection);
+      unlink($temp_file);
+
+    echo "<br> DBF file GLJNL<br>";
+  }else{
+    echo "<br>Error downloading DBF file GLJNL";
+  }

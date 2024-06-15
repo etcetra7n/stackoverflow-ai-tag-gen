@@ -1,0 +1,78 @@
+C++: `error: expected ',' or '...' before string constant` before `__FILE__` in `fancy_abort (__FILE__, __LINE__, __FUNCTION__)` when compiling gcc
+This is a continuation of trying to compile a license-free GPL version of the Microchip XC32 microcontroller g++ XC32 v4.35 cross-compiler from source.
+
+See my Q&A here, and my repo here: https://github.com/ElectricRCAircraftGuy/Microchip_XC32_Compiler.
+
+Note that this builds perfectly to completion on Linux Ubuntu 22.04 with gcc --version gcc (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0.
+
+However, when compiling on Windows in the MSYS2 UCRT64 environment (set up per my instructions here) with gcc --version gcc.exe (Rev2, Built by MSYS2 project) 13.2.0, I now get the following error in gcc/gcc/system.h:
+
+./../../pic32m-source/gcc/gcc/prefix.c
+../../../pic32m-source/gcc/gcc/system.h:737:30: error: expected identifier before string constant
+  737 | #define abort() fancy_abort (__FILE__, __LINE__, __FUNCTION__)
+      |                              ^~~~~~~~
+../../../pic32m-source/gcc/gcc/system.h:737:30: error: expected ',' or '...' before string constant
+../../../pic32m-source/gcc/gcc/system.h:737:30: error: expected identifier before string constant
+  737 | #define abort() fancy_abort (__FILE__, __LINE__, __FUNCTION__)
+      |                              ^~~~~~~~
+../../../pic32m-source/gcc/gcc/system.h:737:30: error: expected ',' or '...' before string constant
+make[1]: *** [Makefile:1112: prefix.o] Error 1
+make[1]: Leaving directory '/c/Users/gabriel/GS/dev/Microchip_XC32_Compiler/xc32-v4.35-src/pic32m-build/gcc/gcc'
+make: *** [Makefile:4290: all-gcc] Error 2
+Here is the system.h file I am using, at line 737:
+
+/* Redefine abort to report an internal error w/o coredump, and
+   reporting the location of the error in the source file.  */
+extern void fancy_abort (const char *, int, const char *)
+                     ATTRIBUTE_NORETURN ATTRIBUTE_COLD;
+#define abort() fancy_abort (__FILE__, __LINE__, __FUNCTION__)
+This definition of abort() is getting called, for instance, inside a C++ template class in fibonacci_heap.h line 460, here:
+
+template<class K, class V>
+V*
+fibonacci_heap<K,V>::delete_node (fibonacci_node<K,V> *node, bool release)
+{
+  V *ret = node->m_data;
+
+  /* To perform delete, we just make it the min key, and extract.  */
+  replace_key (node, m_global_min_key);
+  if (node != m_min)
+    {
+      fprintf (stderr, "Can't force minimum on fibheap.\n");
+      abort ();  // <=========== HERE ===========
+    }
+  extract_min (release);
+
+  return ret;
+}
+How do I resolve this build error?
+
+And, why is it occurring on Windows, but not on Linux?
+
+Additional research:
+Useful Google search: msys gcc abort fancy_abort error: expected identifier before string constant
+
+Possible bug: https://sourceforge.net/p/mingw-w64/bugs/974/
+
+Possible fix: https://github.com/yosshin4004/xdev68k/blob/main/build_m68k-toolchain.sh#L199-L210
+
+#
+#   新しい mingw 環境では以下のようなエラーとなる。
+#       ../../../src/gcc-10.2.0/gcc/system.h:743:30: error: expected identifier before string constant
+#       743 | #define abort() fancy_abort (__FILE__, __LINE__, __FUNCTION__)
+#   応急処置として、問題を起こす行を除去する。
+#   abort() は stdlib.h 内で宣言された実装のままの挙動となる。
+#
+if [ "$(expr substr $(uname -s) 1 5)" == "MINGW" ]; then
+    cat ${SRC_DIR}/${GCC_DIR}/gcc/system.h |\
+    perl -e 'my $before="#define abort() fancy_abort (__FILE__, __LINE__, __FUNCTION__)";my $after="/* $before */";$before=quotemeta($before);while(<>){$_=~s/$before/$after/g;print $_;}' > ${SRC_DIR}/${GCC_DIR}/gcc/system.h.tmp;
+    mv ${SRC_DIR}/${GCC_DIR}/gcc/system.h.tmp ${SRC_DIR}/${GCC_DIR}/gcc/system.h
+fi
+Translation of the comments from Japanese to English:
+
+#
+# In the new mingw environment, the following error will occur.
+# ../../../src/gcc-10.2.0/gcc/system.h:743:30: error: expected identifier before string constant
+# 743 | #define abort() fancy_abort (__FILE__, __LINE__, __FUNCTION__)
+# As a workaround, remove the offending line.
+# abort() behaves as the implementation declared in stdlib.h.
